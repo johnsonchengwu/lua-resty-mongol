@@ -129,6 +129,7 @@ function gridfs_file_mt:write(buf, offset, size)
         r,err = self.file_col:update({_id = self.files_id},nv, 
                         0, 0, true)
         if not r then return nil,"write failed: "..err end
+        self.file_size = nf
     end
 
     nv["$set"] = {md5 = 0}
