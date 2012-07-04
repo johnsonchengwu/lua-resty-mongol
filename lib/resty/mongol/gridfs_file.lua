@@ -141,7 +141,7 @@ end
 
 -- read size bytes from mongo by the offset
 function gridfs_file_mt:read(size, offset)
-    size = size or self.file_size
+     size = size or self.file_size
     if size < 0 then
         return nil, "invalid size"
     end
@@ -149,25 +149,28 @@ function gridfs_file_mt:read(size, offset)
     if offset < 0 or offset >= self.file_size then
         return nil, "invalid offset"
     end
-
     local n = math.floor(offset / self.chunk_size)
     local r
     local bytes = ""
-    local rn = 0
-    while true do
+    local start = offset + 1
+    local stop = offset + size
+    local blockstart = start - self.chunk_size * n
+    while start <= stop do
+        local blockstop = size + blockstart - 1
         r = self.chunk_col:find_one({files_id = self.files_id, n = n})
         if not r then return nil, "read chunk failed" end
-        if size - rn < self.chunk_size then
-            bytes = bytes .. string.sub(r.data, 1, size - rn)
-            rn = size
+
+        if blockstop > self.chunk_size then                                                                                                                         bytes = bytes .. string.sub(r.data, blockstart, self.chunk_size)
+            size = size - (self.chunk_size - blockstart + 1)
+            blockstart = 1
         else
-            bytes = bytes .. r.data
-            rn = rn + self.chunk_size
+            bytes = bytes .. string.sub(r.data, blockstart, blockstop)
+            break
         end
         n = n + 1
-        if rn >= size then break end
     end
     return bytes
+
 end
 
 function gridfs_file_mt:update_md5()
